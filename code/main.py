@@ -1,0 +1,6 @@
+"""Point d'entrée principal du projet."""
+
+from run_app import main
+
+if __name__ == "__main__":
+    main()
