@@ -3,568 +3,348 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rapport – Segmentation interactive & Inpainting</title>
+<title>Segmentation interactive et remplissage automatique de l'arrière-plan</title>
 <style>
   :root {
-    --accent: #4f8ef7;
-    --accent2: #27c97e;
-    --bg: #f5f6fa;
-    --card: #ffffff;
-    --text: #1e1e2e;
-    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --text: #1e293b;
+    --muted: #64748b;
     --border: #e2e8f0;
-    --code-bg: #f1f5f9;
+    --bg: #f8fafc;
+    --card: #ffffff;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; line-height: 1.7; }
-
-  /* ── HEADER ── */
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 15.5px;
+    line-height: 1.8;
+  }
   header {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
-    color: #fff; padding: 56px 24px 40px; text-align: center;
+    background: #1e293b;
+    color: #f1f5f9;
+    padding: 52px 24px 40px;
+    text-align: center;
+    border-bottom: 4px solid var(--accent);
   }
-  header h1 { font-size: 2em; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; }
-  header p.subtitle { font-size: 1.05em; color: #a5b4fc; margin-bottom: 20px; }
-  .badge-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
-  .badge { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius: 20px; padding: 4px 14px; font-size: .82em; color: #e0e7ff; }
-
-  /* ── NAV ── */
-  nav { position: sticky; top: 0; z-index: 100; background: #1e1e2e; border-bottom: 1px solid #2d2d44; }
-  nav ul { display: flex; list-style: none; justify-content: center; flex-wrap: wrap; gap: 0; }
-  nav ul li a { display: block; padding: 13px 18px; color: #a5b4fc; text-decoration: none; font-size: .88em; transition: color .2s, background .2s; }
-  nav ul li a:hover { color: #fff; background: rgba(79,142,247,.15); }
-
-  /* ── LAYOUT ── */
-  .container { max-width: 960px; margin: 0 auto; padding: 0 20px; }
-  section { padding: 52px 0 20px; }
+  header h1 { font-size: 1.9em; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 12px; line-height: 1.3; }
+  header .meta { color: #94a3b8; font-size: .92em; font-style: italic; }
+  nav { position: sticky; top: 0; z-index: 100; background: #1e293b; border-bottom: 1px solid #334155; }
+  nav ul { display: flex; list-style: none; justify-content: center; flex-wrap: wrap; }
+  nav ul li a { display: block; padding: 12px 15px; color: #94a3b8; text-decoration: none; font-family: 'Segoe UI', Arial, sans-serif; font-size: .82em; transition: color .2s, background .2s; }
+  nav ul li a:hover { color: #f1f5f9; background: rgba(255,255,255,.06); }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 28px; }
+  section { padding: 48px 0 16px; }
   section + section { border-top: 1px solid var(--border); }
-
-  /* ── HEADINGS ── */
-  h2 { font-size: 1.5em; font-weight: 700; margin-bottom: 20px; padding-left: 14px; border-left: 4px solid var(--accent); }
-  h3 { font-size: 1.1em; font-weight: 600; margin: 28px 0 10px; color: #334155; }
-
-  /* ── CARDS ── */
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 20px; }
-  .card-icon { font-size: 1.8em; margin-bottom: 10px; }
-
-  /* ── PIPELINE STEPS ── */
-  .steps { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
-  .step { display: flex; gap: 18px; align-items: flex-start; position: relative; padding-bottom: 28px; }
-  .step:last-child { padding-bottom: 0; }
-  .step:not(:last-child)::after { content: ''; position: absolute; left: 19px; top: 40px; width: 2px; bottom: 0; background: var(--border); }
-  .step-num { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .95em; }
-  .step-body h4 { font-size: 1em; font-weight: 600; margin-bottom: 4px; }
-  .step-body p { color: var(--muted); font-size: .93em; }
-
-  /* ── CODE / MONO ── */
-  code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-family: 'Cascadia Code', 'Fira Mono', monospace; font-size: .88em; color: #c026d3; }
-  pre { background: #1e1e2e; color: #e2e8f0; border-radius: 10px; padding: 20px; overflow-x: auto; font-size: .85em; line-height: 1.6; margin: 16px 0; }
-  pre code { background: none; border: none; color: inherit; padding: 0; font-size: inherit; }
-
-  /* ── TABLE ── */
-  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .93em; }
-  th { background: #f8fafc; padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 600; color: #374151; }
-  td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: #4b5563; }
-  tr:hover td { background: #f9fafb; }
-
-  /* ── RESULTS GALLERY ── */
-  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 20px 0; }
-  .gallery figure { margin: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: var(--card); box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+  h2 { font-size: 1.35em; font-weight: 700; margin-bottom: 22px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); color: #0f172a; }
+  h3 { font-size: 1.05em; font-weight: 700; margin: 30px 0 10px; color: #1e3a5f; }
+  p { margin-bottom: 14px; text-align: justify; }
+  ul, ol { margin: 10px 0 14px 26px; }
+  li { margin-bottom: 6px; }
+  strong { color: #0f172a; }
+  em { color: var(--muted); }
+  .note { background: #fefce8; border-left: 4px solid #eab308; border-radius: 6px; padding: 13px 18px; margin: 18px 0; font-size: .93em; color: #713f12; }
+  .note-info { background: var(--accent-light); border-left: 4px solid var(--accent); border-radius: 6px; padding: 13px 18px; margin: 18px 0; font-size: .93em; color: #1e3a5f; }
+  .table-wrap { overflow-x: auto; margin: 18px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; font-family: 'Segoe UI', Arial, sans-serif; }
+  th { background: #1e293b; color: #f1f5f9; padding: 10px 14px; text-align: center; font-weight: 600; border: 1px solid #334155; }
+  td { padding: 9px 14px; border: 1px solid var(--border); color: #374151; text-align: center; }
+  td:first-child { text-align: left; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  tr:hover td { background: #eff6ff; }
+  code { font-family: 'Cascadia Code', 'Fira Mono', monospace; background: #f1f5f9; border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: .88em; color: #be185d; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
+  .gallery figure { margin: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.06); }
   .gallery figure img { width: 100%; display: block; }
-  .gallery figure figcaption { padding: 8px 12px; font-size: .82em; color: var(--muted); background: #f8fafc; }
-
-  /* ── HIGHLIGHT BOX ── */
-  .highlight { background: linear-gradient(135deg, #eff6ff, #f0fdf4); border-left: 4px solid var(--accent2); border-radius: 8px; padding: 16px 20px; margin: 18px 0; }
-  .highlight strong { color: #166534; }
-
-  /* ── TAG PILLS ── */
-  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .tag { background: #eff6ff; color: var(--accent); border: 1px solid #bfdbfe; border-radius: 6px; padding: 3px 10px; font-size: .8em; font-weight: 500; }
-
-  /* ── FOOTER ── */
-  footer { background: #1e1e2e; color: #64748b; text-align: center; padding: 30px 20px; font-size: .85em; margin-top: 60px; }
-
-  @media (max-width: 600px) {
-    header h1 { font-size: 1.4em; }
-    nav ul li a { padding: 10px 10px; font-size: .8em; }
-  }
+  .gallery figure figcaption { padding: 7px 10px; font-size: .8em; color: var(--muted); background: #f8fafc; font-family: 'Segoe UI', Arial, sans-serif; text-align: center; }
+  footer { background: #1e293b; color: #64748b; text-align: center; padding: 28px 20px; font-size: .84em; margin-top: 60px; font-family: 'Segoe UI', Arial, sans-serif; }
+  @media (max-width: 600px) { header h1 { font-size: 1.3em; } .container { padding: 0 14px; } nav ul li a { padding: 9px 8px; font-size: .75em; } }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════ HEADER ═══════════════ -->
 <header>
-  <h1>Segmentation interactive & Inpainting</h1>
-  <p class="subtitle">Rapport de projet — Photographie algorithmique · Ingénierie 5 · Semestre 2 · 2025–2026</p>
-  <p style="color:#94a3b8; font-size:.9em;">Théo Fornier</p>
-  <div class="badge-row">
-    <span class="badge">🐍 Python 3.11</span>
-    <span class="badge">🖼️ OpenCV</span>
-    <span class="badge">✂️ GrabCut</span>
-    <span class="badge">🎨 LaMa Inpainting</span>
-    <span class="badge">🖥️ PySide6</span>
-  </div>
+  <h1>Segmentation interactive et remplissage<br>automatique de l'arrière-plan</h1>
+  <p class="meta">Projet de photographie algorithmique &nbsp;·&nbsp; Théo Fornier &nbsp;·&nbsp; 2025–2026</p>
 </header>
 
-<!-- ═══════════════ NAV ═══════════════ -->
 <nav>
   <ul>
-    <li><a href="#intro">Introduction</a></li>
-    <li><a href="#archi">Architecture</a></li>
-    <li><a href="#segmentation">Segmentation</a></li>
-    <li><a href="#inpainting">Inpainting</a></li>
-    <li><a href="#interface">Interface</a></li>
-    <li><a href="#evaluation">Évaluation</a></li>
-    <li><a href="#resultats">Résultats</a></li>
-    <li><a href="#conclusion">Conclusion</a></li>
+    <li><a href="#intro">1. Introduction</a></li>
+    <li><a href="#approche">2. Approche</a></li>
+    <li><a href="#protocole">3. Protocole</a></li>
+    <li><a href="#reels">4. Images réelles</a></li>
+    <li><a href="#synthetiques">5. Cas synthétiques</a></li>
+    <li><a href="#limites">6. Limites</a></li>
+    <li><a href="#conclusion">7. Conclusion</a></li>
   </ul>
 </nav>
 
 <div class="container">
 
-<!-- ═══════════════ 1. INTRODUCTION ═══════════════ -->
 <section id="intro">
   <h2>1. Introduction</h2>
-  <div class="card">
-    <p>Ce projet s'inscrit dans le cadre du cours de <strong>photographie algorithmique</strong>. L'objectif est de concevoir un outil interactif permettant à un utilisateur de :</p>
-    <ol style="margin: 14px 0 14px 24px; color: #374151;">
-      <li>Sélectionner un <strong>objet dans une image</strong> via un rectangle de délimitation et/ou des coups de pinceau (foreground / background).</li>
-      <li>Obtenir un <strong>masque de segmentation précis</strong> grâce à l'algorithme GrabCut (graph cut).</li>
-      <li><strong>Reconstruire automatiquement l'arrière-plan</strong> à la place de l'objet retiré, via un inpainting neuronal (LaMa) ou un fallback OpenCV.</li>
-    </ol>
-    <p>L'ensemble est exposé dans une application desktop PySide6, avec un pipeline de traitement entièrement modulaire et des scripts d'évaluation quantitative.</p>
-  </div>
-  <div class="highlight">
-    <strong>Problématique principale :</strong> comment obtenir une segmentation robuste à partir d'annotations minimales de l'utilisateur, et comment reconstruire le fond de façon naturelle et cohérente avec le reste de l'image ?
+  <p>La suppression d'objets dans une image est un problème classique en traitement d'images. Elle demande deux étapes distinctes : d'abord identifier précisément les pixels appartenant à l'objet, puis reconstruire de manière plausible la zone laissée vide.</p>
+  <p>Le projet présenté ici propose un outil interactif permettant à un utilisateur de sélectionner un objet dans une photographie à l'aide d'annotations visuelles simples, de l'extraire, puis de remplir automatiquement le fond. L'approche combine une segmentation par graph cut — via GrabCut — et un remplissage par réseau de neurones avec LaMa, le tout intégré dans une interface graphique PySide6.</p>
+  <div class="note-info">
+    <strong>Problématique.</strong> Comment proposer une segmentation interactive efficace et un remplissage réaliste du fond, tout en conservant une interface simple et accessible ?
   </div>
 </section>
 
-<!-- ═══════════════ 2. ARCHITECTURE ═══════════════ -->
-<section id="archi">
-  <h2>2. Architecture du projet</h2>
-  <div class="card-grid">
-    <div class="card">
-      <div class="card-icon">📁</div>
-      <h3 style="margin-top:0">src/segmentation/</h3>
-      <p>Pipeline complet de segmentation : initialisation par rectangle ou scribbles, résolution GrabCut, génération et raffinement du masque.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">🎨</div>
-      <h3 style="margin-top:0">src/inpainting/</h3>
-      <p>Construction du masque de trou, calcul de la ROI, appel à LaMa ou OpenCV TELEA, fusion dans l'image originale.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">🖥️</div>
-      <h3 style="margin-top:0">src/interface/</h3>
-      <p>Application PySide6 : canvas interactif, gestion de l'état, pinceaux, modes d'affichage, sauvegarde des résultats.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">📊</div>
-      <h3 style="margin-top:0">src/evaluation/</h3>
-      <p>Métriques (IoU, SSIM, PSNR), benchmarks sur cas synthétiques, analyse qualitative et génération de planches comparatives.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">🔧</div>
-      <h3 style="margin-top:0">src/core/</h3>
-      <p>Utilitaires transverses : chargement / sauvegarde d'images, pré-traitement (redimensionnement), post-traitement (morphologie).</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">📈</div>
-      <h3 style="margin-top:0">src/visualization/</h3>
-      <p>Affichage des masques, overlays colorés, planches côte à côte, contours et comparatifs quantitatifs.</p>
-    </div>
-  </div>
+<section id="approche">
+  <h2>2. Approche proposée</h2>
 
-  <h3>Structure des modules</h3>
-  <pre><code>projet/code/
-├── config.py               # Paramètres globaux (GrabCut, morphologie, inpainting…)
-├── main.py / run_app.py    # Points d'entrée
-├── src/
-│   ├── core/               # image_loader, preprocessing, postprocessing, utils
-│   ├── segmentation/       # graph_builder, graph_cut_solver, mask_generator,
-│   │                       # mask_refinement, rectangle_init, scribble_init,
-│   │                       # seeds_manager, segmentation_pipeline
-│   ├── inpainting/         # generative_fill (LaMa + fallback), fill_utils,
-│   │                       # background_completion, inpainting_pipeline
-│   ├── interface/          # app_controller (PySide6), canvas_handler, events,
-│   │                       # state_manager, widgets, annotation_tools
-│   ├── evaluation/         # metrics, benchmark_cases, qualitative_analysis,
-│   │                       # run_experiments
-│   └── visualization/      # overlays, display_masks, display_results, comparison_plots
-└── tests/                  # Suite pytest (pipeline, masque, graph, inpainting…)</code></pre>
-</section>
-
-<!-- ═══════════════ 3. SEGMENTATION ═══════════════ -->
-<section id="segmentation">
-  <h2>3. Segmentation interactive (GrabCut)</h2>
-
-  <h3>Principe de GrabCut</h3>
-  <div class="card">
-    <p>GrabCut (<em>Rother et al., 2004</em>) est un algorithme de <strong>segmentation interactive par graph cut</strong>. Il modélise la distribution de couleur du premier plan et de l'arrière-plan par des <strong>Mélanges Gaussiens (GMM)</strong>, puis résout un problème de <strong>coupe minimale dans un graphe</strong> (énergie de Gibbs) pour affecter chaque pixel à une classe.</p>
-    <p style="margin-top: 10px;">Le processus itère en alternant :</p>
-    <ol style="margin: 10px 0 0 24px; color: #374151;">
-      <li>Mise à jour des GMM foreground / background à partir du masque courant.</li>
-      <li>Résolution de la coupe min-cut / max-flow pour mettre à jour le masque.</li>
-    </ol>
-  </div>
-
-  <h3>Pipeline de segmentation</h3>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <h4>Initialisation</h4>
-        <p>L'utilisateur dessine un <strong>rectangle</strong> autour de l'objet (<code>GC_INIT_WITH_RECT</code>) et/ou applique des <strong>scribbles</strong> foreground / background (<code>GC_PR_FGD</code>, <code>GC_BGD</code>). Les deux modes sont combinables.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <h4>Résolution GrabCut</h4>
-        <p>Le solveur (<code>graph_cut_solver.py</code>) appelle <code>cv2.grabCut</code> deux fois : d'abord avec le rectangle (si fourni), puis avec le masque mis à jour (<code>GC_INIT_WITH_MASK</code>) pour 5 itérations par défaut.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <h4>Génération du masque binaire</h4>
-        <p><code>mask_generator.py</code> binarise le masque GrabCut en ne conservant que les labels <code>GC_FGD</code> et <code>GC_PR_FGD</code> comme foreground.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body">
-        <h4>Raffinement morphologique</h4>
-        <p><code>mask_refinement.py</code> applique une ouverture (kernel 3×3), une fermeture (kernel 7×7), une dilatation (1 itération), puis ne conserve que la <strong>plus grande composante connexe</strong> contenant les seeds foreground.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">5</div>
-      <div class="step-body">
-        <h4>Extraction de l'objet</h4>
-        <p>L'objet est isolé sur fond noir (<code>extracted_object_bgr</code>) et le fond est mis à transparent via canal alpha (<code>background_removed_bgr</code>). Un canal de feathering est appliqué sur les bords du masque (Gaussian blur, σ = 11 px).</p>
-      </div>
-    </div>
-  </div>
-
-  <h3>Paramètres clés (<code>config.py</code>)</h3>
-  <table>
-    <tr><th>Paramètre</th><th>Valeur par défaut</th><th>Rôle</th></tr>
-    <tr><td><code>GRABCUT_ITERATIONS</code></td><td>5</td><td>Nombre d'itérations GrabCut</td></tr>
-    <tr><td><code>SCRIBBLE_RADIUS</code></td><td>8 px</td><td>Rayon du pinceau d'annotation</td></tr>
-    <tr><td><code>MASK_OPEN_KERNEL</code></td><td>3</td><td>Taille du noyau d'ouverture morphologique</td></tr>
-    <tr><td><code>MASK_CLOSE_KERNEL</code></td><td>7</td><td>Taille du noyau de fermeture morphologique</td></tr>
-    <tr><td><code>MASK_DILATE_ITERATIONS</code></td><td>1</td><td>Itérations de dilatation finale du masque</td></tr>
-    <tr><td><code>FEATHER_BLUR_SIZE</code></td><td>11 px</td><td>Flou pour le feathering des bords</td></tr>
-    <tr><td><code>ROI_MARGIN_RATIO</code></td><td>0.25</td><td>Marge autour de la bbox objet pour GrabCut</td></tr>
-  </table>
-
-  <h3>Modes d'initialisation supportés</h3>
-  <div class="card-grid">
-    <div class="card">
-      <h4>🔲 Rectangle seul</h4>
-      <p>L'utilisateur délimite l'objet par un rectangle. GrabCut initialise automatiquement les GMM. Rapide mais moins précis sur les objets complexes.</p>
-      <div class="tags"><span class="tag">GC_INIT_WITH_RECT</span></div>
-    </div>
-    <div class="card">
-      <h4>✏️ Scribbles (PAP / PPP)</h4>
-      <p>Pinceaux vert (foreground) et rouge (background). Permet d'affiner les zones ambiguës. Peut être utilisé seul ou en complément du rectangle.</p>
-      <div class="tags"><span class="tag">GC_PR_FGD</span><span class="tag">GC_BGD</span></div>
-    </div>
-    <div class="card">
-      <h4>🔲✏️ Rectangle + Scribbles</h4>
-      <p>Combinaison optimale : le rectangle donne une initialisation grossière, les scribbles affinent les bords critiques. Mode recommandé.</p>
-      <div class="tags"><span class="tag">INIT_WITH_RECT</span><span class="tag">INIT_WITH_MASK</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════ 4. INPAINTING ═══════════════ -->
-<section id="inpainting">
-  <h2>4. Reconstruction du fond (Inpainting)</h2>
-
-  <h3>Stratégie générale</h3>
-  <div class="card">
-    <p>Une fois l'objet retiré, un <strong>masque de trou</strong> est construit à partir du masque de segmentation raffiné. Le pipeline calcule une <strong>ROI locale</strong> autour du trou pour n'envoyer qu'une région pertinente à l'algorithme d'inpainting, puis fusionne le résultat dans l'image originale.</p>
-  </div>
-
-  <h3>Backend LaMa (principal)</h3>
-  <div class="card">
-    <p><a href="https://github.com/advimman/lama" style="color: var(--accent);">LaMa</a> (<em>Large Mask inpainting</em>) est un modèle de deep learning basé sur des <strong>Fast Fourier Convolutions (FFC)</strong> qui capturent les répétitions et textures à longue portée. Il est utilisé via le paquet Python <code>simple-lama-inpainting</code>.</p>
-    <div class="tags">
-      <span class="tag">🧠 Réseau neuronal</span>
-      <span class="tag">FFT Convolutions</span>
-      <span class="tag">Grandes masques</span>
-      <span class="tag">Cohérence globale</span>
-    </div>
-  </div>
-
-  <h3>Fallback OpenCV</h3>
-  <div class="card">
-    <p>Si LaMa n'est pas disponible, le système bascule sur <code>cv2.inpaint</code> avec la méthode <strong>TELEA</strong> (algorithme basé sur l'équation de transport rapide). Ce fallback est fonctionnel sur de petits trous mais moins convaincant sur de larges zones.</p>
-    <pre><code>method = cv2.INPAINT_TELEA if config.INPAINT_FALLBACK_METHOD == "telea" else cv2.INPAINT_NS
-cv2.inpaint(image_bgr, hole_mask, config.INPAINT_FALLBACK_RADIUS, method)</code></pre>
-  </div>
-
-  <h3>Pipeline d'inpainting</h3>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <h4>Construction du masque de trou</h4>
-        <p>Le masque binaire de l'objet est dilaté (<code>INPAINT_MASK_DILATION = 2</code>) pour couvrir les artefacts de bord.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <h4>Calcul de la ROI locale</h4>
-        <p>Une bounding box englobant le masque de trou est calculée avec une marge de 20 % (<code>INPAINT_ROI_MARGIN_RATIO</code>), minimum 24 px.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <h4>Inpainting sur la ROI</h4>
-        <p>Seule la région recadrée est envoyée au backend (LaMa ou TELEA), réduisant la charge mémoire et le temps de calcul.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body">
-        <h4>Fusion avec feathering</h4>
-        <p>La ROI inpaintée est réintégrée dans l'image originale. Un flou gaussien (σ = 17 px) sur les bords du masque assure une transition douce (<em>feathering</em>).</p>
-      </div>
-    </div>
-  </div>
-
-  <h3>Paramètres clés</h3>
-  <table>
-    <tr><th>Paramètre</th><th>Valeur</th><th>Rôle</th></tr>
-    <tr><td><code>INPAINT_ROI_MARGIN_RATIO</code></td><td>0.20</td><td>Marge autour du trou pour la ROI</td></tr>
-    <tr><td><code>INPAINT_MIN_ROI_PADDING</code></td><td>24 px</td><td>Padding minimal de la ROI</td></tr>
-    <tr><td><code>INPAINT_FEATHER_BLUR_SIZE</code></td><td>17 px</td><td>Flou de fusion sur les bords</td></tr>
-    <tr><td><code>INPAINT_FALLBACK_RADIUS</code></td><td>3 px</td><td>Rayon de propagation OpenCV</td></tr>
-    <tr><td><code>INPAINT_FALLBACK_METHOD</code></td><td>telea</td><td>Algorithme fallback (telea | ns)</td></tr>
-  </table>
-</section>
-
-<!-- ═══════════════ 5. INTERFACE ═══════════════ -->
-<section id="interface">
-  <h2>5. Interface utilisateur (PySide6)</h2>
-  <div class="card">
-    <p>L'interface est une application desktop Qt développée avec <strong>PySide6</strong>. Elle expose un workflow linéaire guidé par numérotation des boutons.</p>
-  </div>
-
-  <h3>Workflow utilisateur</h3>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body"><h4>Charger une image</h4><p>Dialogue de fichier, chargement et redimensionnement automatique (max 1280×900 px).</p></div>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body"><h4>Mode rectangle (optionnel)</h4><p>Dessin d'un rectangle de délimitation sur le canvas.</p></div>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body"><h4>Pinceau premier plan</h4><p>Scribbles verts sur l'objet à segmenter.</p></div>
-    </div>
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body"><h4>Pinceau arrière-plan</h4><p>Scribbles rouges sur le fond.</p></div>
-    </div>
-    <div class="step">
-      <div class="step-num">5</div>
-      <div class="step-body"><h4>Lancer la segmentation</h4><p>Exécution du pipeline GrabCut + raffinement.</p></div>
-    </div>
-    <div class="step">
-      <div class="step-num">6</div>
-      <div class="step-body"><h4>Remplir l'arrière-plan</h4><p>Exécution du pipeline d'inpainting (LaMa ou TELEA).</p></div>
-    </div>
-  </div>
-
-  <h3>Modes d'affichage disponibles</h3>
-  <div class="card-grid">
-    <div class="card"><strong>Original</strong><br><small>Image brute chargée.</small></div>
-    <div class="card"><strong>Annotations</strong><br><small>Scribbles fg/bg superposés.</small></div>
-    <div class="card"><strong>Overlay</strong><br><small>Masque semi-transparent sur l'image.</small></div>
-    <div class="card"><strong>Masque</strong><br><small>Masque binaire coloré.</small></div>
-    <div class="card"><strong>Objet extrait</strong><br><small>Objet isolé sur fond noir.</small></div>
-    <div class="card"><strong>Fond reconstruit</strong><br><small>Image finale après inpainting.</small></div>
-  </div>
-
-  <h3>Autres fonctionnalités</h3>
-  <ul style="margin: 0 0 0 24px; color: #374151; line-height: 2;">
-    <li>Spinbox pour ajuster la taille du pinceau à la volée.</li>
-    <li>Bouton <em>Réinitialiser annotations</em> sans recharger l'image.</li>
-    <li>Bouton <em>Sauvegarder résultats</em> : écrit le masque, l'objet extrait, le fond inpainted et une planche comparative dans <code>data/output/</code>.</li>
-    <li>Log textuel en temps réel affichant les métriques de chaque étape.</li>
+  <h3>2.1 Pipeline global</h3>
+  <ul>
+    <li><strong>Chargement de l'image :</strong> l'utilisateur sélectionne une photographie depuis son disque.</li>
+    <li><strong>Annotation interactive :</strong> l'utilisateur dessine un rectangle englobant l'objet et, si besoin, ajoute des tracés de pinceau indiquant le premier plan (vert) et l'arrière-plan (rouge).</li>
+    <li><strong>Segmentation par GrabCut :</strong> l'algorithme sépare automatiquement l'objet du fond à partir des annotations fournies.</li>
+    <li><strong>Raffinement du masque :</strong> des opérations morphologiques nettoient le masque obtenu, puis un lissage léger adoucit ses contours.</li>
+    <li><strong>Extraction de l'objet :</strong> l'objet segmenté est isolé sur fond transparent.</li>
+    <li><strong>Construction de la zone à remplir :</strong> la région correspondant à l'objet supprimé devient la zone à reconstruire.</li>
+    <li><strong>Inpainting :</strong> un algorithme de remplissage reconstruit la zone manquante pour produire un fond visuellement plausible.</li>
+    <li><strong>Visualisation et sauvegarde :</strong> les différents résultats (masque, overlay, objet extrait, fond reconstruit) sont affichés et sauvegardés.</li>
   </ul>
+
+  <h3>2.2 Segmentation interactive — GrabCut</h3>
+  <p>GrabCut est un algorithme de segmentation itératif basé sur les graphes. Il modélise les distributions de couleurs du premier plan et de l'arrière-plan au moyen de mélanges gaussiens, puis cherche une coupe de coût minimal séparant au mieux les deux classes.</p>
+  <p>Dans cette application, l'utilisateur peut guider la segmentation de quatre manières : rectangle seul, pinceau premier plan (FG) seul, pinceau arrière-plan (BG) seul, ou combinaison des trois. En pratique, le rectangle fournit une bonne initialisation, tandis que les annotations FG et BG servent surtout à corriger les zones ambiguës.</p>
+  <p>Le masque final est ensuite nettoyé par érosion et dilatation pour supprimer les petits artefacts, puis légèrement lissé afin d'éviter des contours trop durs.</p>
+
+  <h3>2.3 Remplissage automatique de l'arrière-plan</h3>
+  <p>Le backend principal de remplissage est <strong>LaMa</strong>, un réseau de neurones conçu pour l'inpainting de grandes zones manquantes. Son intérêt, dans ce projet, est de mieux conserver la cohérence globale du fond lorsque la zone à reconstruire devient large.</p>
+  <p>Si LaMa n'est pas disponible, l'application bascule automatiquement vers les méthodes d'inpainting d'OpenCV (<strong>Telea</strong> et <strong>Navier-Stokes</strong>). Ces solutions sont rapides et utiles comme repli, mais leurs limites apparaissent vite dès que le fond comporte des textures marquées ou des structures géométriques fortes.</p>
+  <p>Pour réduire le coût de calcul, le remplissage est appliqué uniquement sur une <strong>région d'intérêt (ROI)</strong> entourant le masque, puis réintégré dans l'image originale.</p>
+
+  <h3>2.4 Interface utilisateur</h3>
+  <p>L'interface PySide6 permet de charger une image, de tracer un rectangle, d'ajouter des annotations FG/BG avec une taille de pinceau réglable, de lancer la segmentation puis le remplissage, et d'afficher les résultats sous plusieurs formes. L'objectif n'était pas seulement d'obtenir un pipeline fonctionnel, mais un outil que l'on puisse vraiment manipuler pour comparer rapidement plusieurs stratégies d'annotation.
+  </p>
 </section>
 
-<!-- ═══════════════ 6. ÉVALUATION ═══════════════ -->
-<section id="evaluation">
-  <h2>6. Évaluation quantitative</h2>
+<section id="protocole">
+  <h2>3. Protocole expérimental</h2>
+  <p>L'évaluation repose sur deux niveaux complémentaires : d'un côté des images réelles du projet, analysées surtout de manière qualitative ; de l'autre des cas synthétiques contrôlés, utilisés pour obtenir des mesures quantitatives absolues.</p>
 
-  <h3>Métriques de segmentation</h3>
-  <table>
-    <tr><th>Métrique</th><th>Formule</th><th>Interprétation</th></tr>
-    <tr><td><strong>IoU</strong> (Intersection over Union)</td><td>|P∩G| / |P∪G|</td><td>Recouvrement entre masque prédit et vérité terrain. 1 = parfait.</td></tr>
-    <tr><td><strong>Dice</strong></td><td>2|P∩G| / (|P|+|G|)</td><td>Similaire à l'IoU, pénalise moins les petits objets.</td></tr>
-    <tr><td><strong>Pixel Accuracy</strong></td><td>(VP+VN) / N</td><td>Proportion globale de pixels bien classés.</td></tr>
-    <tr><td><strong>Boundary F1</strong></td><td>F1 sur contours (tolérance 2 px)</td><td>Qualité des bords du masque.</td></tr>
-  </table>
+  <h3>3.1 Jeux de données et cas étudiés</h3>
+  <p>Le premier niveau d'évaluation porte sur <strong>trois photographies réelles</strong> traitées avec l'application. Elles ont été choisies pour représenter des niveaux de difficulté croissants : un fond simple, un fond texturé et un fond structuré avec plusieurs zones ambiguës.</p>
+  <p>Le second niveau repose sur <strong>trois cas synthétiques</strong> générés automatiquement : un cercle, un rectangle et une ellipse dessinés sur fond uniforme. Dans ce cadre, la vérité terrain est connue exactement au pixel près.</p>
 
-  <h3>Métriques d'inpainting</h3>
-  <table>
-    <tr><th>Métrique</th><th>Rôle</th></tr>
-    <tr><td><strong>PSNR</strong> (Peak Signal-to-Noise Ratio)</td><td>Fidélité pixel-par-pixel sur la zone inpaintée. ↑ mieux.</td></tr>
-    <tr><td><strong>SSIM</strong> (Structural Similarity Index)</td><td>Préservation des structures visuelles. ↑ mieux (max 1).</td></tr>
-    <tr><td><strong>LPIPS</strong></td><td>Perceptual similarity via features profondes. ↓ mieux.</td></tr>
-  </table>
+  <h3>3.2 Stratégie d'évaluation</h3>
+  <p>Sur les images réelles, l'évaluation est principalement <strong>qualitative</strong> : inspection visuelle des masques, de l'objet extrait et du fond reconstruit. Une comparaison relative entre modes d'annotation est également proposée, en prenant la combinaison <em>rectangle + FG + BG</em> comme référence interne.</p>
+  <p>Sur les cas synthétiques, l'évaluation devient <strong>quantitative</strong> : les masques prédits et les reconstructions sont comparés à une vérité terrain exacte. Cela permet de mesurer plus directement le comportement du pipeline, mais seulement dans un cadre contrôlé.</p>
 
-  <h3>Protocole de benchmark</h3>
-  <div class="card">
-    <p>Un jeu de données synthétique est généré par <code>generate_synthetic_eval_dataset.py</code> : pour chaque image, un objet connu est collé sur un fond enregistré, ce qui fournit la <em>vérité terrain</em> exacte du masque et du fond original. Les scripts <code>evaluate_segmentation.py</code> et <code>evaluate_inpainting.py</code> calculent les métriques sur l'ensemble du jeu et produisent des tableaux CSV + graphiques comparatifs.</p>
-  </div>
+  <h3>3.3 Vérité terrain et annotations</h3>
+  <p>Pour les images réelles, aucune vérité terrain annotée manuellement n'a été produite. Les IoU de la section 4 doivent donc être lues comme des <strong>mesures relatives</strong> par rapport à une référence interne, et non comme des mesures absolues de qualité de segmentation.</p>
+  <p>Pour les cas synthétiques, les annotations sont dérivées mécaniquement du masque exact : le FG est obtenu par érosion du GT, le BG correspond à un anneau autour du GT dilaté, et le rectangle à la bounding box du GT. Ces conditions sont favorables et doivent être interprétées comme telles.</p>
+
+  <h3>3.4 Métriques</h3>
+  <ul>
+    <li><strong>Segmentation :</strong> IoU, Dice, précision, rappel.</li>
+    <li><strong>Images réelles :</strong> ratio de pixels entre le masque prédit et la référence interne.</li>
+    <li><strong>Inpainting synthétique :</strong> PSNR et SSIM, calculés par rapport à l'image originale intacte.</li>
+  </ul>
+
+  <h3>3.5 Limites du protocole</h3>
+  <p>Le nombre de cas reste modeste (trois images réelles et trois cas synthétiques). De plus, les cas synthétiques sont beaucoup plus simples que des images naturelles et les scores qui y sont obtenus ne résument pas un usage interactif réel. Enfin, l'absence de vérité terrain manuelle sur les images réelles empêche toute évaluation absolue de la segmentation dans cette partie du rapport.</p>
 </section>
 
-<!-- ═══════════════ 7. RÉSULTATS ═══════════════ -->
-<section id="resultats">
-  <h2>7. Résultats visuels</h2>
-  <p style="color: var(--muted); margin-bottom: 20px;">Exemples de résultats obtenus sur trois images de test avec différents modes d'annotation.</p>
-
-  <h3>Image 1 — Mode Rectangle + Scribbles</h3>
-  <div class="gallery">
-    <figure>
-      <img src="images/image1_rectangle__visualizations__image1_overlay.png" alt="Overlay segmentation image 1 rectangle">
-      <figcaption>Overlay masque (rectangle)</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image1_rectangle__segmented_objects__image1_object.png" alt="Objet extrait image 1">
-      <figcaption>Objet extrait</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image1_rectangle__inpainted__image1_inpainted.png" alt="Fond reconstruit image 1">
-      <figcaption>Fond reconstruit (LaMa)</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image1_rectangle__visualizations__image1_segmentation_triptych.png" alt="Triptyque image 1">
-      <figcaption>Planche comparative</figcaption>
-    </figure>
+<section id="reels">
+  <h2>4. Résultats sur images réelles</h2>
+  <div class="note">
+    Dans cette section, les mesures d'IoU sont calculées par rapport à la segmentation obtenue avec la combinaison <em>rectangle + FG + BG</em>, utilisée comme référence interne. Elles mesurent donc la proximité relative des autres modes à cette référence, et non une exactitude absolue par rapport à une vérité terrain annotée manuellement.
   </div>
 
-  <h3>Image 1 — Mode Scribbles seuls (PPP)</h3>
+  <h3>4.1 Exemple 1 — image1</h3>
+  <p>Ce premier cas est le plus favorable de la série. L'objet se détache bien du fond et le décor autour de lui reste simple. Sur ce type d'image, GrabCut dispose déjà d'une bonne séparation visuelle entre le sujet et l'arrière-plan.</p>
+  <p>Le rectangle seul fonctionne déjà très bien ici (IoU 0,975, ratio 0,99). Le BG seul est presque aussi bon (IoU 0,978, ratio 0,99), ce qui montre que quelques indications négatives suffisent parfois à guider correctement GrabCut. Le FG seul, en revanche, se retourne ici contre l'algorithme : le masque s'élargit trop, absorbe une partie du fond et agrandit artificiellement la zone à reconstruire.</p>
+  <p>La combinaison <em>rectangle + FG + BG</em> fournit le résultat le plus propre parmi les modes testés et sert donc de référence interne. Cela dit, le gain visuel par rapport au rectangle seul reste limité : sur une scène aussi simple, peu d'annotations suffisent déjà à obtenir une suppression convaincante.</p>
   <div class="gallery">
+    <figure>
+      <img src="images/image1_rectangle__visualizations__image1_overlay.png" alt="Overlay rectangle image 1">
+      <figcaption>Overlay — Rectangle seul</figcaption>
+    </figure>
     <figure>
       <img src="images/image1_PPP__visualizations__image1_overlay.png" alt="Overlay PPP image 1">
-      <figcaption>Overlay masque (PPP)</figcaption>
+      <figcaption>Overlay — Scribbles PPP</figcaption>
     </figure>
     <figure>
-      <img src="images/image1_PPP__segmented_objects__image1_object.png" alt="Objet extrait PPP image 1">
-      <figcaption>Objet extrait</figcaption>
+      <img src="images/image1_tout__inpainted__image1_inpainted.png" alt="Fond reconstruit image 1">
+      <figcaption>Fond reconstruit — Combinaison</figcaption>
     </figure>
     <figure>
-      <img src="images/image1_PPP__inpainted__image1_inpainted.png" alt="Fond reconstruit PPP image 1">
-      <figcaption>Fond reconstruit (LaMa)</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image1_PPP__visualizations__image1_final_board.png" alt="Planche PPP image 1">
+      <img src="images/image1_tout__visualizations__image1_final_board.png" alt="Planche image 1">
       <figcaption>Planche finale</figcaption>
     </figure>
   </div>
 
-  <h3>Image 2 — Mode Rectangle</h3>
+  <h3>4.2 Exemple 2 — image2</h3>
+  <p>L'image 2 est plus piégeuse. Le fond présente un motif strié très visible : dès que le remplissage se trompe, l'erreur saute aux yeux. Cette image permet donc de bien distinguer les difficultés propres à la segmentation de celles de l'inpainting.</p>
+  <p>Le rectangle seul reste exploitable (IoU 0,864, ratio 1,10), mais quelques pixels de fond passent dans le masque. Avec FG seul, la dérive devient plus visible (IoU 0,569, ratio 1,76) : le masque déborde autour de l'objet et agrandit inutilement la zone à reconstruire.</p>
+  <p>La combinaison complète donne ici le masque le plus convaincant. Pourtant, même avec une meilleure segmentation, le fond reconstruit ne devient pas totalement naturel : l'artefact sombre et flou reste bien visible à l'emplacement de l'objet. Cette image montre clairement qu'un bon masque aide beaucoup, mais ne garantit pas à lui seul un inpainting convaincant.</p>
   <div class="gallery">
     <figure>
-      <img src="images/image2_rectangle__visualizations__image2_overlay.png" alt="Overlay image 2">
-      <figcaption>Overlay masque</figcaption>
+      <img src="images/image2_rectangle__visualizations__image2_overlay.png" alt="Overlay rectangle image 2">
+      <figcaption>Overlay — Rectangle seul</figcaption>
     </figure>
     <figure>
       <img src="images/image2_rectangle__segmented_objects__image2_object.png" alt="Objet extrait image 2">
       <figcaption>Objet extrait</figcaption>
     </figure>
     <figure>
-      <img src="images/image2_rectangle__inpainted__image2_inpainted.png" alt="Fond reconstruit image 2">
-      <figcaption>Fond reconstruit</figcaption>
+      <img src="images/image2_tout__inpainted__image2_inpainted.png" alt="Fond reconstruit image 2">
+      <figcaption>Fond reconstruit — Combinaison</figcaption>
     </figure>
     <figure>
-      <img src="images/image2_rectangle__visualizations__image2_segmentation_triptych.png" alt="Triptyque image 2">
-      <figcaption>Planche comparative</figcaption>
-    </figure>
-  </div>
-
-  <h3>Image 3 — Combinaison Rectangle + PAP + PPP</h3>
-  <div class="gallery">
-    <figure>
-      <img src="images/image3_tout__visualizations__image3_overlay.png" alt="Overlay image 3 tout">
-      <figcaption>Overlay masque (tout)</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image3_tout__segmented_objects__image3_object.png" alt="Objet extrait image 3">
-      <figcaption>Objet extrait</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image3_tout__inpainted__image3_inpainted.png" alt="Fond reconstruit image 3">
-      <figcaption>Fond reconstruit</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image3_tout__visualizations__image3_final_board.png" alt="Planche finale image 3">
+      <img src="images/image2_tout__visualizations__image2_final_board.png" alt="Planche image 2">
       <figcaption>Planche finale</figcaption>
     </figure>
   </div>
+
+  <h3>4.3 Exemple 3 — image3</h3>
+  <p>Le troisième cas est le plus difficile de la série. Le fond est chargé, plusieurs objets sont proches du sujet, et certains contours deviennent peu lisibles. On entre ici dans une scène où les ambiguïtés visuelles pèsent autant que l'objet lui-même.</p>
+  <p>Le rectangle seul reste surprenamment efficace (IoU 0,925, ratio 0,95), même s'il manque un peu de matière sur certains bords. FG seul échoue nettement (IoU 0,198, ratio 5,04) : le masque s'étale bien au-delà de l'objet. BG seul montre la limite opposée (IoU 0,618, ratio 0,63) : sans indication explicite de premier plan, la récupération de l'objet reste incomplète.</p>
+  <p>Dans ce contexte, la combinaison <em>rectangle + FG + BG</em> reste la solution la plus fiable parmi les modes testés. Le résultat final est globalement acceptable, mais certaines textures et quelques contours du décor restent lissés. C'est le cas qui montre le mieux que la reconstruction du fond devient le véritable verrou du pipeline.</p>
+  <div class="gallery">
+    <figure>
+      <img src="images/image3_rectangle__visualizations__image3_overlay.png" alt="Overlay rectangle image 3">
+      <figcaption>Overlay — Rectangle seul</figcaption>
+    </figure>
+    <figure>
+      <img src="images/image3_PAP__visualizations__image3_overlay.png" alt="Overlay PAP image 3">
+      <figcaption>Overlay — Scribbles PAP</figcaption>
+    </figure>
+    <figure>
+      <img src="images/image3_tout__inpainted__image3_inpainted.png" alt="Fond reconstruit image 3">
+      <figcaption>Fond reconstruit — Combinaison</figcaption>
+    </figure>
+    <figure>
+      <img src="images/image3_tout__visualizations__image3_final_board.png" alt="Planche image 3">
+      <figcaption>Planche finale</figcaption>
+    </figure>
+  </div>
+
+  <h3>4.4 Analyse des résultats</h3>
+  <p>Sur les trois images réelles, le choix des annotations change nettement le comportement de GrabCut. Le rectangle seul fournit déjà une base solide, surtout lorsque l'objet se détache bien du fond. Le FG seul est le mode le plus fragile dans cette implémentation : dès que la scène devient plus chargée, il a tendance à englober trop large. Le BG seul peut au contraire bien fonctionner sur un cas simple, mais il montre vite ses limites lorsqu'il faut reconstituer tout le premier plan.</p>
+  <p>Ces trois exemples racontent aussi trois niveaux de difficulté différents. La première image est presque un cas d'école ; la deuxième montre que les structures répétitives du fond rendent l'inpainting très sensible ; la troisième cumule fond encombré, textures variées et zones ambiguës. Autrement dit, la difficulté ne vient pas seulement de l'objet à enlever, mais aussi de tout ce que le système doit reconstituer autour.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Rectangle seul</th>
+          <th>FG seul</th>
+          <th>BG seul</th>
+          <th>Combinaison (réf.)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Image 1 — IoU</strong></td><td>0,975</td><td>0,500</td><td>0,978</td><td>1,000</td></tr>
+        <tr><td><strong>Image 2 — IoU</strong></td><td>0,864</td><td>0,569</td><td>—</td><td>1,000</td></tr>
+        <tr><td><strong>Image 3 — IoU</strong></td><td>0,925</td><td>0,198</td><td>0,618</td><td>1,000</td></tr>
+        <tr><td><strong>Image 1 — ratio pixels</strong></td><td>0,99</td><td>2,00</td><td>0,99</td><td>1,00</td></tr>
+        <tr><td><strong>Image 2 — ratio pixels</strong></td><td>1,10</td><td>1,76</td><td>—</td><td>1,00</td></tr>
+        <tr><td><strong>Image 3 — ratio pixels</strong></td><td>0,95</td><td>5,04</td><td>0,63</td><td>1,00</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:.88em; color: #64748b;">Par construction, la colonne « Combinaison (réf.) » vaut 1,000 pour l'IoU et 1,00 pour le ratio de pixels, puisqu'elle sert de référence interne.</p>
 </section>
 
-<!-- ═══════════════ 8. CONCLUSION ═══════════════ -->
+<section id="synthetiques">
+  <h2>5. Évaluation quantitative sur cas synthétiques</h2>
+  <p>Afin de compléter l'analyse qualitative sur images réelles, deux scripts <em>headless</em> ont été développés : <code>scripts/evaluate_segmentation.py</code> et <code>scripts/evaluate_inpainting.py</code>. Ils opèrent sur trois cas synthétiques simples (cercle, rectangle, ellipse) placés sur fond uniforme, ce qui permet de disposer d'une vérité terrain exacte et d'obtenir des mesures absolues.</p>
+  <div class="note">
+    Ces résultats doivent être interprétés dans le cadre contrôlé qui les a produits. Ils n'ont pas vocation à décrire un usage interactif réel, mais à vérifier le bon comportement du pipeline sur des données maîtrisées.
+  </div>
+
+  <h3>5.1 Segmentation — IoU / Dice / Précision / Rappel</h3>
+  <p>Les annotations synthétiques sont dérivées mécaniquement du masque GT : FG = GT érodé, BG = anneau autour du GT, rectangle = bounding box du GT. Les conditions étant favorables, les scores du mode combinaison doivent être lus comme une borne supérieure dans ce cadre.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Cas</th><th>Mode</th><th>IoU</th><th>Dice</th><th>Précision</th><th>Rappel</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>image1 (cercle)</td><td>rectangle</td><td>0,948</td><td>0,973</td><td>0,948</td><td>1,000</td></tr>
+        <tr><td>image1</td><td>FG seul</td><td>0,939</td><td>0,969</td><td>0,939</td><td>1,000</td></tr>
+        <tr><td>image1</td><td><strong>combinaison</strong></td><td><strong>1,000</strong></td><td><strong>1,000</strong></td><td><strong>1,000</strong></td><td><strong>1,000</strong></td></tr>
+        <tr><td>image2 (rectangle)</td><td>rectangle</td><td>0,981</td><td>0,990</td><td>0,981</td><td>1,000</td></tr>
+        <tr><td>image2</td><td>FG seul</td><td>0,962</td><td>0,981</td><td>0,962</td><td>1,000</td></tr>
+        <tr><td>image2</td><td><strong>combinaison</strong></td><td><strong>1,000</strong></td><td><strong>1,000</strong></td><td><strong>1,000</strong></td><td><strong>1,000</strong></td></tr>
+        <tr><td>image3 (ellipse)</td><td>rectangle</td><td>0,950</td><td>0,974</td><td>0,950</td><td>1,000</td></tr>
+        <tr><td>image3</td><td>FG seul</td><td>0,926</td><td>0,962</td><td>0,926</td><td>1,000</td></tr>
+        <tr><td>image3</td><td><strong>combinaison</strong></td><td><strong>1,000</strong></td><td><strong>1,000</strong></td><td><strong>1,000</strong></td><td><strong>1,000</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Le rappel égal à 1,000 dans tous les modes indique que, sur ces formes géométriques nettes, le pipeline GrabCut ne manque aucun pixel du masque GT. La précision inférieure à 1 pour les modes simples traduit une légère sur-segmentation aux bords. Le mode BG seul n'a pas été évalué car il nécessite au minimum un point de premier plan dans cette implémentation.</p>
+
+  <h3>5.2 Inpainting — PSNR / SSIM</h3>
+  <p>Le protocole consiste à masquer la région GT dilatée de 15 pixels pour créer un trou synthétique, à reconstruire cette région avec chacune des trois méthodes, puis à comparer le résultat à l'image d'origine. Cette comparaison n'est possible que parce que le contenu vrai de la zone est connu <em>a priori</em> ; sur les suppressions d'objet réelles, l'évaluation reste qualitative.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Cas</th><th>Méthode</th><th>PSNR (dB)</th><th>SSIM</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>image1</td><td>OpenCV Telea</td><td>14,08</td><td>0,9327</td></tr>
+        <tr><td>image1</td><td>Navier-Stokes</td><td>14,37</td><td>0,9356</td></tr>
+        <tr><td>image1</td><td><strong>LaMa</strong></td><td><strong>14,55</strong></td><td><strong>0,9354</strong></td></tr>
+        <tr><td>image2</td><td>OpenCV Telea</td><td>11,61</td><td>0,8901</td></tr>
+        <tr><td>image2</td><td>Navier-Stokes</td><td>12,11</td><td>0,8987</td></tr>
+        <tr><td>image2</td><td><strong>LaMa</strong></td><td><strong>12,28</strong></td><td><strong>0,8988</strong></td></tr>
+        <tr><td>image3</td><td>OpenCV Telea</td><td>17,02</td><td>0,9546</td></tr>
+        <tr><td>image3</td><td>Navier-Stokes</td><td>17,36</td><td>0,9580</td></tr>
+        <tr><td>image3</td><td><strong>LaMa</strong></td><td><strong>17,56</strong></td><td><strong>0,9578</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Sur ces cas synthétiques, les trois méthodes restent assez proches. LaMa garde néanmoins une petite avance régulière sur Telea et Navier-Stokes en PSNR (+0,2 à +0,5 dB), avec un avantage plus discret en SSIM. Ce résultat n'est pas spectaculaire sur fond uniforme, mais il va dans le sens de ce que l'on observe visuellement : les écarts deviennent surtout intéressants lorsque la scène impose davantage de texture ou de structure.</p>
+  <p>Ces scores restent toutefois à lire avec prudence. Les valeurs absolues de PSNR sont modestes (11–18 dB) parce que le trou couvre une zone large et colorée sur un fond presque uniforme : il faut donc retrouver une teinte très précise. De plus, PSNR et SSIM rendent imparfaitement compte de la qualité perçue sur des images naturelles ; une métrique comme LPIPS serait plus pertinente pour aller plus loin.</p>
+</section>
+
+<section id="limites">
+  <h2>6. Limites et améliorations possibles</h2>
+
+  <h3>6.1 Limites de la segmentation</h3>
+  <ul>
+    <li><strong>Objets transparents ou semi-transparents :</strong> GrabCut repose sur des distributions de couleurs et ne modélise pas la transparence. Les objets en verre, les reflets ou les ombres légères restent difficiles à traiter.</li>
+    <li><strong>Petits objets ou détails fins :</strong> cheveux, fils ou branches fines sont facilement perdus lors du raffinement morphologique du masque.</li>
+    <li><strong>Couleurs proches entre objet et fond :</strong> lorsque les distributions de premier plan et d'arrière-plan se recouvrent fortement, la segmentation devient moins stable, même avec des annotations complètes.</li>
+    <li><strong>Dépendance aux annotations :</strong> la qualité du résultat dépend directement de la précision des indications fournies par l'utilisateur.</li>
+  </ul>
+
+  <h3>6.2 Limites du remplissage</h3>
+  <ul>
+    <li><strong>Structures géométriques régulières :</strong> LaMa peut produire des incohérences sur des motifs répétitifs comme des grilles, des lignes droites ou des briques.</li>
+    <li><strong>Fonds très texturés :</strong> les textures complexes restent difficiles à reconstituer proprement.</li>
+    <li><strong>Méthodes de repli OpenCV :</strong> Telea et Navier-Stokes sont utiles pour dépanner, mais montrent vite leurs limites sur de grandes zones à reconstruire.</li>
+  </ul>
+
+  <h3>6.3 Améliorations possibles</h3>
+  <ul>
+    <li>Remplacer GrabCut par une méthode de segmentation plus robuste, par exemple <strong>SAM</strong>, afin de réduire la dépendance aux annotations manuelles.</li>
+    <li>Explorer des méthodes d'inpainting par <strong>diffusion</strong> pour mieux reconstruire les fonds structurés.</li>
+    <li>Permettre un raffinement itératif du masque sans repartir de zéro après chaque correction.</li>
+    <li>Ajouter une estimation d'<strong>alpha matting</strong> pour mieux gérer les bords doux et les transparences.</li>
+    <li>Accélérer l'exécution de LaMa sur <strong>GPU</strong> pour rendre l'outil plus réactif à l'usage.</li>
+  </ul>
+</section>
+
 <section id="conclusion">
-  <h2>8. Conclusion & Perspectives</h2>
-  <div class="card">
-    <h3 style="margin-top:0">Bilan</h3>
-    <p>Le projet implémente avec succès un pipeline de segmentation interactive robuste basé sur GrabCut, avec un raffinement morphologique automatique, et un système d'inpainting hybride (LaMa + fallback TELEA) produisant des reconstructions de fond visuellement convaincantes. L'interface PySide6 rend l'outil accessible et ergonomique.</p>
-  </div>
-  <div class="card-grid">
-    <div class="card">
-      <h4>✅ Points forts</h4>
-      <ul style="margin-left: 18px; color: #374151; line-height: 1.9;">
-        <li>Architecture modulaire et testée (pytest)</li>
-        <li>Support de 3 modes d'annotation</li>
-        <li>Inpainting neuronal de haute qualité (LaMa)</li>
-        <li>Feathering automatique des bords</li>
-        <li>Pipeline d'évaluation quantitatif complet</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h4>🔮 Perspectives</h4>
-      <ul style="margin-left: 18px; color: #374151; line-height: 1.9;">
-        <li>Intégration de SAM (Segment Anything Model)</li>
-        <li>Inpainting par diffusion (Stable Diffusion)</li>
-        <li>Exportation en PNG avec canal alpha</li>
-        <li>Mode vidéo (segmentation par propagation)</li>
-        <li>Interface web (Flask / FastAPI + React)</li>
-      </ul>
-    </div>
-  </div>
-
-  <h3>Dépendances principales</h3>
-  <div class="tags" style="margin-top: 10px;">
-    <span class="tag">opencv-python</span>
-    <span class="tag">numpy</span>
-    <span class="tag">PySide6</span>
-    <span class="tag">Pillow</span>
-    <span class="tag">simple-lama-inpainting</span>
-    <span class="tag">scikit-image</span>
-    <span class="tag">matplotlib</span>
-    <span class="tag">pytest</span>
-  </div>
+  <h2>7. Conclusion</h2>
+  <p>Ce projet montre qu'un pipeline simple mais bien articulé peut déjà produire un outil convaincant de suppression d'objet. Dans la pratique, la segmentation par GrabCut tient plutôt bien sur les trois images réelles testées, et elle devient vraiment robuste dès que le rectangle est complété par des indications FG et BG. À l'inverse, le mode FG seul s'est révélé le plus instable, surtout quand la scène devient chargée.</p>
+  <p>Le point le plus délicat reste clairement le remplissage. Tant que le fond est simple et que le masque est propre, le résultat passe bien visuellement. Dès que le décor impose des textures, des lignes ou des structures visibles, les artefacts réapparaissent vite. Autrement dit, enlever l'objet n'est pas toujours le plus dur ; le plus dur est souvent de faire disparaître sa présence sans laisser de trace.</p>
+  <p>L'évaluation quantitative sur cas synthétiques apporte un appui utile, mais elle doit rester à sa juste place : elle valide le bon comportement du pipeline dans un cadre contrôlé, sans prétendre résumer un usage réel. La suite la plus naturelle serait donc de constituer un petit corpus d'images naturelles annotées manuellement, afin de mesurer plus directement ce que le système gagne — et ce qu'il perd — lorsqu'il sort de ces conditions favorables.</p>
 </section>
 
-</div><!-- /container -->
+</div>
 
 <footer>
-  <p>Théo Fornier — Ingénierie 5, Semestre 2 · Photographie algorithmique · 2025–2026</p>
-  <p style="margin-top:6px; color: #475569;">Segmentation interactive & Inpainting · GrabCut + LaMa · PySide6</p>
+  <p>Théo Fornier &nbsp;·&nbsp; Photographie algorithmique &nbsp;·&nbsp; Ingénierie 5, Semestre 2 &nbsp;·&nbsp; 2025–2026</p>
 </footer>
 
 </body>
