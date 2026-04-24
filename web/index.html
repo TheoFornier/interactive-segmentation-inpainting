@@ -55,10 +55,23 @@
   tr:nth-child(even) td { background: #f8fafc; }
   tr:hover td { background: #eff6ff; }
   code { font-family: 'Cascadia Code', 'Fira Mono', monospace; background: #f1f5f9; border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: .88em; color: #be185d; }
-  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 12px 0 24px; }
   .gallery figure { margin: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.06); }
-  .gallery figure img { width: 100%; display: block; }
+  .gallery figure img { width: 100%; display: block; cursor: zoom-in; }
   .gallery figure figcaption { padding: 7px 10px; font-size: .8em; color: var(--muted); background: #f8fafc; font-family: 'Segoe UI', Arial, sans-serif; text-align: center; }
+  .mode-block { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .mode-block h4 { font-family: 'Segoe UI', Arial, sans-serif; font-size: .95em; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .badge-mode { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .75em; font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif; }
+  .badge-rect  { background: #dbeafe; color: #1d4ed8; }
+  .badge-fg    { background: #dcfce7; color: #15803d; }
+  .badge-bg    { background: #fee2e2; color: #b91c1c; }
+  .badge-all   { background: #fef9c3; color: #92400e; }
+  /* Lightbox */
+  #lb-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9999; align-items:center; justify-content:center; flex-direction:column; }
+  #lb-overlay.open { display:flex; }
+  #lb-img { max-width:92vw; max-height:82vh; border-radius:6px; box-shadow:0 8px 40px rgba(0,0,0,.6); }
+  #lb-caption { color:#e2e8f0; font-family:'Segoe UI',sans-serif; font-size:.9em; margin-top:14px; text-align:center; }
+  #lb-close { position:fixed; top:18px; right:24px; color:#fff; font-size:2em; cursor:pointer; line-height:1; }
   footer { background: #1e293b; color: #64748b; text-align: center; padding: 28px 20px; font-size: .84em; margin-top: 60px; font-family: 'Segoe UI', Arial, sans-serif; }
   @media (max-width: 600px) { header h1 { font-size: 1.3em; } .container { padding: 0 14px; } nav ul li a { padding: 9px 8px; font-size: .75em; } }
 </style>
@@ -160,69 +173,169 @@
   <p>Ce premier cas est le plus favorable de la série. L'objet se détache bien du fond et le décor autour de lui reste simple. Sur ce type d'image, GrabCut dispose déjà d'une bonne séparation visuelle entre le sujet et l'arrière-plan.</p>
   <p>Le rectangle seul fonctionne déjà très bien ici (IoU 0,975, ratio 0,99). Le BG seul est presque aussi bon (IoU 0,978, ratio 0,99), ce qui montre que quelques indications négatives suffisent parfois à guider correctement GrabCut. Le FG seul, en revanche, se retourne ici contre l'algorithme : le masque s'élargit trop, absorbe une partie du fond et agrandit artificiellement la zone à reconstruire.</p>
   <p>La combinaison <em>rectangle + FG + BG</em> fournit le résultat le plus propre parmi les modes testés et sert donc de référence interne. Cela dit, le gain visuel par rapport au rectangle seul reste limité : sur une scène aussi simple, peu d'annotations suffisent déjà à obtenir une suppression convaincante.</p>
-  <div class="gallery">
-    <figure>
-      <img src="images/image1_rectangle__visualizations__image1_overlay.png" alt="Overlay rectangle image 1">
-      <figcaption>Overlay — Rectangle seul</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image1_PPP__visualizations__image1_overlay.png" alt="Overlay PPP image 1">
-      <figcaption>Overlay — Scribbles PPP</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image1_tout__inpainted__image1_inpainted.png" alt="Fond reconstruit image 1">
-      <figcaption>Fond reconstruit — Combinaison</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image1_tout__visualizations__image1_final_board.png" alt="Planche image 1">
-      <figcaption>Planche finale</figcaption>
-    </figure>
+
+  <!-- IMAGE 1 — Mode Rectangle seul -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-rect">Rectangle seul</span> — Image 1 &nbsp;·&nbsp; IoU 0,975</h4>
+    <div class="gallery">
+      <figure><img src="images/image1_rectangle__visualizations__image1_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image1_rectangle__visualizations__image1_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image1_rectangle__segmented_objects__image1_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image1_rectangle__background_removed__image1_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image1_rectangle__inpainted__image1_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image1_rectangle__visualizations__image1_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image1_rectangle__visualizations__image1_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
+  </div>
+
+  <!-- IMAGE 1 — Mode FG seul (PPP) -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-fg">Pinceau FG seul (PPP)</span> — Image 1 &nbsp;·&nbsp; IoU 0,500</h4>
+    <div class="gallery">
+      <figure><img src="images/image1_PPP__visualizations__image1_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image1_PPP__visualizations__image1_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image1_PPP__segmented_objects__image1_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image1_PPP__background_removed__image1_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image1_PPP__inpainted__image1_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image1_PPP__visualizations__image1_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image1_PPP__visualizations__image1_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
+  </div>
+
+  <!-- IMAGE 1 — Mode BG seul (PAP) -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-bg">Pinceau BG seul (PAP)</span> — Image 1 &nbsp;·&nbsp; IoU 0,978</h4>
+    <div class="gallery">
+      <figure><img src="images/image1_PAP__visualizations__image1_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image1_PAP__visualizations__image1_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image1_PAP__segmented_objects__image1_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image1_PAP__background_removed__image1_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image1_PAP__inpainted__image1_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image1_PAP__visualizations__image1_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image1_PAP__visualizations__image1_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
+  </div>
+
+  <!-- IMAGE 1 — Combinaison (référence) -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-all">Combinaison Rectangle + FG + BG ★ référence</span> — Image 1 &nbsp;·&nbsp; IoU 1,000</h4>
+    <div class="gallery">
+      <figure><img src="images/image1_tout__visualizations__image1_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image1_tout__visualizations__image1_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image1_tout__segmented_objects__image1_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image1_tout__background_removed__image1_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image1_tout__inpainted__image1_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image1_tout__visualizations__image1_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image1_tout__visualizations__image1_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
   </div>
 
   <h3>4.2 Exemple 2 — image2</h3>
   <p>L'image 2 est plus piégeuse. Le fond présente un motif strié très visible : dès que le remplissage se trompe, l'erreur saute aux yeux. Cette image permet donc de bien distinguer les difficultés propres à la segmentation de celles de l'inpainting.</p>
   <p>Le rectangle seul reste exploitable (IoU 0,864, ratio 1,10), mais quelques pixels de fond passent dans le masque. Avec FG seul, la dérive devient plus visible (IoU 0,569, ratio 1,76) : le masque déborde autour de l'objet et agrandit inutilement la zone à reconstruire.</p>
   <p>La combinaison complète donne ici le masque le plus convaincant. Pourtant, même avec une meilleure segmentation, le fond reconstruit ne devient pas totalement naturel : l'artefact sombre et flou reste bien visible à l'emplacement de l'objet. Cette image montre clairement qu'un bon masque aide beaucoup, mais ne garantit pas à lui seul un inpainting convaincant.</p>
-  <div class="gallery">
-    <figure>
-      <img src="images/image2_rectangle__visualizations__image2_overlay.png" alt="Overlay rectangle image 2">
-      <figcaption>Overlay — Rectangle seul</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image2_rectangle__segmented_objects__image2_object.png" alt="Objet extrait image 2">
-      <figcaption>Objet extrait</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image2_tout__inpainted__image2_inpainted.png" alt="Fond reconstruit image 2">
-      <figcaption>Fond reconstruit — Combinaison</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image2_tout__visualizations__image2_final_board.png" alt="Planche image 2">
-      <figcaption>Planche finale</figcaption>
-    </figure>
+
+  <!-- IMAGE 2 — Mode Rectangle seul -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-rect">Rectangle seul</span> — Image 2 &nbsp;·&nbsp; IoU 0,864</h4>
+    <div class="gallery">
+      <figure><img src="images/image2_rectangle__visualizations__image2_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image2_rectangle__visualizations__image2_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image2_rectangle__segmented_objects__image2_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image2_rectangle__background_removed__image2_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image2_rectangle__inpainted__image2_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image2_rectangle__visualizations__image2_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image2_rectangle__visualizations__image2_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
+  </div>
+
+  <!-- IMAGE 2 — Mode FG seul (PPP) -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-fg">Pinceau FG seul (PPP)</span> — Image 2 &nbsp;·&nbsp; IoU 0,569</h4>
+    <div class="gallery">
+      <figure><img src="images/image2_PPP__visualizations__image2_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image2_PPP__visualizations__image2_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image2_PPP__segmented_objects__image2_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image2_PPP__background_removed__image2_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image2_PPP__inpainted__image2_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image2_PPP__visualizations__image2_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image2_PPP__visualizations__image2_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
+  </div>
+
+  <!-- IMAGE 2 — Combinaison (référence) -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-all">Combinaison Rectangle + FG + BG ★ référence</span> — Image 2 &nbsp;·&nbsp; IoU 1,000</h4>
+    <div class="gallery">
+      <figure><img src="images/image2_tout__visualizations__image2_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image2_tout__visualizations__image2_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image2_tout__segmented_objects__image2_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image2_tout__background_removed__image2_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image2_tout__inpainted__image2_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image2_tout__visualizations__image2_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image2_tout__visualizations__image2_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
   </div>
 
   <h3>4.3 Exemple 3 — image3</h3>
   <p>Le troisième cas est le plus difficile de la série. Le fond est chargé, plusieurs objets sont proches du sujet, et certains contours deviennent peu lisibles. On entre ici dans une scène où les ambiguïtés visuelles pèsent autant que l'objet lui-même.</p>
   <p>Le rectangle seul reste surprenamment efficace (IoU 0,925, ratio 0,95), même s'il manque un peu de matière sur certains bords. FG seul échoue nettement (IoU 0,198, ratio 5,04) : le masque s'étale bien au-delà de l'objet. BG seul montre la limite opposée (IoU 0,618, ratio 0,63) : sans indication explicite de premier plan, la récupération de l'objet reste incomplète.</p>
   <p>Dans ce contexte, la combinaison <em>rectangle + FG + BG</em> reste la solution la plus fiable parmi les modes testés. Le résultat final est globalement acceptable, mais certaines textures et quelques contours du décor restent lissés. C'est le cas qui montre le mieux que la reconstruction du fond devient le véritable verrou du pipeline.</p>
-  <div class="gallery">
-    <figure>
-      <img src="images/image3_rectangle__visualizations__image3_overlay.png" alt="Overlay rectangle image 3">
-      <figcaption>Overlay — Rectangle seul</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image3_PAP__visualizations__image3_overlay.png" alt="Overlay PAP image 3">
-      <figcaption>Overlay — Scribbles PAP</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image3_tout__inpainted__image3_inpainted.png" alt="Fond reconstruit image 3">
-      <figcaption>Fond reconstruit — Combinaison</figcaption>
-    </figure>
-    <figure>
-      <img src="images/image3_tout__visualizations__image3_final_board.png" alt="Planche image 3">
-      <figcaption>Planche finale</figcaption>
-    </figure>
+
+  <!-- IMAGE 3 — Mode Rectangle seul -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-rect">Rectangle seul</span> — Image 3 &nbsp;·&nbsp; IoU 0,925</h4>
+    <div class="gallery">
+      <figure><img src="images/image3_rectangle__visualizations__image3_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image3_rectangle__visualizations__image3_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image3_rectangle__segmented_objects__image3_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image3_rectangle__background_removed__image3_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image3_rectangle__inpainted__image3_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image3_rectangle__visualizations__image3_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image3_rectangle__visualizations__image3_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
+  </div>
+
+  <!-- IMAGE 3 — Mode FG seul (PPP) -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-fg">Pinceau FG seul (PPP)</span> — Image 3 &nbsp;·&nbsp; IoU 0,198</h4>
+    <div class="gallery">
+      <figure><img src="images/image3_PPP__visualizations__image3_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image3_PPP__visualizations__image3_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image3_PPP__segmented_objects__image3_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image3_PPP__background_removed__image3_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image3_PPP__inpainted__image3_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image3_PPP__visualizations__image3_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image3_PPP__visualizations__image3_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
+  </div>
+
+  <!-- IMAGE 3 — Mode BG seul (PAP) -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-bg">Pinceau BG seul (PAP)</span> — Image 3 &nbsp;·&nbsp; IoU 0,618</h4>
+    <div class="gallery">
+      <figure><img src="images/image3_PAP__visualizations__image3_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image3_PAP__visualizations__image3_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image3_PAP__segmented_objects__image3_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image3_PAP__background_removed__image3_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image3_PAP__inpainted__image3_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image3_PAP__visualizations__image3_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image3_PAP__visualizations__image3_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
+  </div>
+
+  <!-- IMAGE 3 — Combinaison (référence) -->
+  <div class="mode-block">
+    <h4><span class="badge-mode badge-all">Combinaison Rectangle + FG + BG ★ référence</span> — Image 3 &nbsp;·&nbsp; IoU 1,000</h4>
+    <div class="gallery">
+      <figure><img src="images/image3_tout__visualizations__image3_overlay.png" alt=""><figcaption>Overlay du masque sur l'image</figcaption></figure>
+      <figure><img src="images/image3_tout__visualizations__image3_contours.png" alt=""><figcaption>Contours du masque de segmentation</figcaption></figure>
+      <figure><img src="images/image3_tout__segmented_objects__image3_object.png" alt=""><figcaption>Objet extrait (fond noir)</figcaption></figure>
+      <figure><img src="images/image3_tout__background_removed__image3_removed.png" alt=""><figcaption>Objet extrait (fond transparent)</figcaption></figure>
+      <figure><img src="images/image3_tout__inpainted__image3_inpainted.png" alt=""><figcaption>Fond reconstruit après inpainting</figcaption></figure>
+      <figure><img src="images/image3_tout__visualizations__image3_segmentation_triptych.png" alt=""><figcaption>Triptyque de segmentation</figcaption></figure>
+      <figure><img src="images/image3_tout__visualizations__image3_final_board.png" alt=""><figcaption>Planche finale comparative</figcaption></figure>
+    </div>
   </div>
 
   <h3>4.4 Analyse des résultats</h3>
@@ -347,5 +460,20 @@
   <p>Théo Fornier &nbsp;·&nbsp; Photographie algorithmique &nbsp;·&nbsp; Ingénierie 5, Semestre 2 &nbsp;·&nbsp; 2025–2026</p>
 </footer>
 
+</body>
+<div id="lb-overlay" onclick="this.classList.remove('open')">
+  <span id="lb-close" onclick="document.getElementById('lb-overlay').classList.remove('open')">&times;</span>
+  <img id="lb-img" src="" alt="">
+  <p id="lb-caption"></p>
+</div>
+<script>
+  document.querySelectorAll('.gallery figure img').forEach(img => {
+    img.addEventListener('click', () => {
+      document.getElementById('lb-img').src = img.src;
+      document.getElementById('lb-caption').textContent = img.closest('figure').querySelector('figcaption').textContent;
+      document.getElementById('lb-overlay').classList.add('open');
+    });
+  });
+</script>
 </body>
 </html>
